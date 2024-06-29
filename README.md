@@ -1,4 +1,4 @@
-# Starter Next/Hardhat Project
+# Solidity integrated eith Frondend (Project)
 This is a smart contract written in Solidity. The purpose is to create a simple contract with 2-3 functions and then show the values of those functions in frontend of the application. 
 
 # Getting Stared
