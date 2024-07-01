@@ -79,13 +79,9 @@ export default function HomePage() {
 
   const transfer = async () => {
     if (atm) {
-      try {
         let tx = await atm.transfer(transferAddress, transferAmount);
         await tx.wait();
         getBalance();
-      } catch (error) {
-        console.error("Transfer error: ", error);
-      }
     }
   }
 
