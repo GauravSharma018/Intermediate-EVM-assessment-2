@@ -9,6 +9,7 @@ contract Assessment {
 
     event Deposit(uint256 amount);
     event Withdraw(uint256 amount);
+    event Transfer(address indexed from, address indexed to, uint256 amount);
 
     constructor(uint initBalance) payable {
         owner = payable(msg.sender);
@@ -56,5 +57,16 @@ contract Assessment {
 
         // emit the event
         emit Withdraw(_withdrawAmount);
+    }
+
+    function transfer(address payable _to, uint256 _amount) public {
+        require(msg.sender == owner, "You are not the owner of this account");
+        require(balance >= _amount, "Insufficient balance");
+        uint _previousBalance = balance;
+        balance -= _amount;
+        (bool success, ) = _to.call{value: _amount}("");
+        require(success, "Transfer failed");
+        assert(balance == (_previousBalance - _amount));
+        emit Transfer(msg.sender, _to, _amount);
     }
 }
