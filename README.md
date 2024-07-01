@@ -10,7 +10,7 @@ Command line proficiency: Basic familiarity with using command line tools such a
 A text editor: For running the code Visual Studio Code.
 You will need to have Node.js installed on your system, with version V10. or higher.
 Node Package Manager npm used for installing and managing dependencies.
-Run this command in your terminal git clone https://github.com/Ultra-Tech-code/DegenStore to clone this repository
+Run this command in your terminal git clone https://github.com/GauravSharma018/Intermediate-EVM-assessment-2 to clone this repository
 
 ## Executing The program
 After cloning the github, you will want to do the following to get the code running on your computer.
