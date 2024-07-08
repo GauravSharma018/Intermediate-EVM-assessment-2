@@ -28,4 +28,4 @@ Typically at http://localhost:3000/
 Gaurav Sharma
 
 # Licence
-This project is licensed under the MIT License.
+This project is unlicensed.
