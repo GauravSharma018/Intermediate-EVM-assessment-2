@@ -11,7 +11,7 @@ async function main() {
   const assessment = await Assessment.deploy();
   await assessment.deployed();
 
-  console.log(`The Assessment contract deployed to ${assessment.address}`);
+  console.log(`The Assessment contract is deployed to ${assessment.address}`);
 }
 
 // We recommend this pattern to be able to use async/await everywhere
