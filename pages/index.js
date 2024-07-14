@@ -7,8 +7,13 @@ export default function HomePage() {
   const [account, setAccount] = useState(undefined);
   const [atm, setATM] = useState(undefined);
   const [balance, setBalance] = useState(undefined);
-  const [owner, setOwner] = useState(undefined);
-  const [amount, setAmount] = useState("");
+  const [userName, setUserName] = useState("");
+  const [depositAmount, setDepositAmount] = useState(0);
+  const [withdrawAmount, setWithdrawAmount] = useState(0);
+  const [newUserName, setNewUserName] = useState("");
+  const [itemsForSale, setItemsForSale] = useState([]);
+  const [inventory, setInventory] = useState([]);
+  const [itemIndex, setItemIndex] = useState("");
 
   const contractAddress = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
   const atmABI = atm_abi.abi;
@@ -39,37 +44,63 @@ export default function HomePage() {
       return;
     }
 
+    const name = prompt("Please enter your name:");
+    setNewUserName(name);
+
     const accounts = await ethWallet.request({ method: "eth_requestAccounts" });
     handleAccount(accounts);
 
-    // once wallet is set we can get a reference to our deployed contract
-    getATMContract();
+    getATMContract(name);
   };
 
-  const getATMContract = () => {
+  const getATMContract = async (name) => {
     const provider = new ethers.providers.Web3Provider(ethWallet);
     const signer = provider.getSigner();
     const atmContract = new ethers.Contract(contractAddress, atmABI, signer);
 
     setATM(atmContract);
+
+    if (name) {
+      await atmContract.setName(name);
+      setUserName(name);
+    }
+
+    getBalance();
+    getInventory();
   };
 
   const getBalance = async () => {
     if (atm) {
-      const balance = await atm.getBalance();
-      setBalance(ethers.utils.formatEther(balance));
+      setBalance((await atm.getBalance()).toNumber());
     }
   };
 
-  const getOwner = async () => {
+  const getItemsForSale = async () => {
     if (atm) {
-      setOwner(await atm.getOwner());
+      const items = await atm.getItemForSale();
+      setItemsForSale(items);
+    }
+  };
+
+  const getInventory = async () => {
+    if (atm) {
+      const inv = await atm.getInventory();
+      setInventory(inv);
+    }
+  };
+
+  const buyItem = async () => {
+    if (atm && itemIndex) {
+      const tx = await atm.buyItem(itemIndex);
+      await tx.wait();
+      getBalance();
+      getInventory();
     }
   };
 
   const deposit = async () => {
     if (atm) {
-      const tx = await atm.deposit({ value: ethers.utils.parseEther(amount) });
+      let tx = await atm.deposit(depositAmount);
       await tx.wait();
       getBalance();
     }
@@ -77,71 +108,146 @@ export default function HomePage() {
 
   const withdraw = async () => {
     if (atm) {
-      const tx = await atm.withdraw(ethers.utils.parseEther(amount));
+      let tx = await atm.withdraw(withdrawAmount);
       await tx.wait();
       getBalance();
     }
   };
 
-  const transfer = async () => {
-    if (atm) {
-      const recipient = prompt("Enter recipient address:");
-      if (recipient && amount) {
-        const tx = await atm.transfer(recipient, ethers.utils.parseEther(amount));
-        await tx.wait();
-        getBalance();
-      }
-    }
-  };
-
   const initUser = () => {
-    // Check to see if user has Metamask
     if (!ethWallet) {
       return <p>Please install Metamask in order to use this ATM.</p>;
     }
-    // Check to see if user is connected. If not, connect to their account
+
     if (!account) {
       return (
-        <button onClick={connectAccount}>Please connect your Metamask wallet</button>
+        <button
+          onClick={connectAccount}
+          style={styles.button}
+        >
+          Please connect your Metamask wallet
+        </button>
       );
     }
-    if (balance == undefined) {
+
+    if (balance === undefined) {
       getBalance();
     }
+
     return (
-      <div>
-        <p>Your Account: {account}</p>
-        <p>Your Balance: {balance}</p>
-        <input
-          type="text"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="Amount in ETH"
-        />
-        <button onClick={deposit}>Deposit</button>
-        <button onClick={withdraw}>Withdraw</button>
-        <button onClick={transfer}>Transfer</button>
-        
-        
-        
-        
+      <div style={styles.container}>
+        <div style={styles.accountInfo}>
+          <p><b>Your Name: </b>{userName}</p>
+          <p><b>Your Account: </b>{account}</p>
+          <p><b>Your Balance:</b> {balance} ETH</p>
+          <p><b>Your Inventory:</b></p>
+          <ul>
+            {Array.isArray(inventory) && inventory.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </div>
+        <div style={styles.section}>
+          <h3>Deposit</h3>
+          <input
+            type="number"
+            placeholder="Amount to Deposit"
+            value={depositAmount}
+            onChange={(e) => setDepositAmount(Number(e.target.value))}
+            style={styles.input}
+          />
+          <button onClick={deposit} style={styles.button}>Deposit</button>
+        </div>
+        <div style={styles.section}>
+          <h3>Withdraw</h3>
+          <input
+            type="number"
+            placeholder="Amount to Withdraw"
+            value={withdrawAmount}
+            onChange={(e) => setWithdrawAmount(Number(e.target.value))}
+            style={styles.input}
+          />
+          <button onClick={withdraw} style={styles.button}>Withdraw</button>
+        </div>
+        <div style={styles.section}>
+          <h3>Items for Sale</h3>
+          <button onClick={getItemsForSale} style={styles.button}>Show Items for Sale</button>
+          <ul>
+            {Array.isArray(itemsForSale) && itemsForSale.map((item, index) => (
+              <li key={index}>{item}</li>
+            ))}
+          </ul>
+        </div>
+        <div style={styles.section}>
+          <h3>Buy Item</h3>
+          <input
+            type="number"
+            placeholder="Item Index"
+            value={itemIndex}
+            onChange={(e) => setItemIndex(Number(e.target.value))}
+            style={styles.input}
+          />
+          <button onClick={buyItem} style={styles.button}>Buy Item</button>
+        </div>
       </div>
     );
   };
 
-  useEffect(() => {getWallet();}, []);
+  useEffect(() => {
+    getWallet();
+  }, []);
+
+  const styles = {
+    container: {
+      backgroundColor: 'aqua',
+      borderRadius: '15px',
+      padding: '20px',
+      boxShadow: '0 4px 8px rgba(0, 0, 0, 0.2)',
+      textAlign: 'center',
+      width: '50%',
+      margin: 'auto',
+      marginTop: '4%',
+    },
+    accountInfo: {
+      backgroundColor: '#f0f0f0',
+      borderRadius: '10px',
+      padding: '10px',
+      margin: '10px 0',
+    },
+    section: {
+      margin: '20px 0',
+    },
+    input: {
+      padding: '10px',
+      margin: '10px 0',
+      borderRadius: '5px',
+      border: '1px solid #ccc',
+      width: '80%',
+    },
+    button: {
+      padding: '10px 20px',
+      border: 'none',
+      borderRadius: '5px',
+      backgroundColor: '#007bff',
+      color: 'white',
+      cursor: 'pointer',
+    },
+    header: {
+      textAlign: 'center',
+      margin: '20px 0',
+      borderRadius: '15px',
+      backgroundColor: 'Pink',
+      width: '40%',
+      margin: 'auto',
+      marginTop: '10%',
+    }
+  };
 
   return (
-    <main className="container">
-      <header>
-        <h1>Welcome to Gaurav's ATM!</h1>
-      </header>
+    <main style={styles.main}>
+      <header style={styles.header}><h1>Welcome to the Gaurav's Store</h1></header>
+        
       {initUser()}
-      <style jsx>{`
-        .container {
-          text-align: center;
-        }
-      `}</style>
     </main>
   );
 }
