@@ -2,59 +2,90 @@
 pragma solidity ^0.8.9;
 
 contract Assessment {
-    address payable private owner;
-    mapping(address => uint256) private balances;
-
-    event Deposit(address indexed account, uint256 amount);
-    event Withdraw(address indexed account, uint256 amount);
-    event Transfer(address indexed from, address indexed to, uint256 amount);
+    address payable public owner;
+    uint256 public balance;
+    string public userName;
+    string[] public ItemForSale = ["1. Blue Shirt (300)","2. Black Pant (400)","3. Red Hat (200)","4. Jacket(500)"]; 
+    string[] public MyInventory;
+ 
+    event Deposit(uint256 amount);
+    event Withdraw(uint256 amount);
+    event NameSet(string name);
+    event GetItemForSale();
+    event GetInventory();
+    event GetItem(uint256 _value, string name);
 
     constructor() payable {
         owner = payable(msg.sender);
+        balance = 0;
     }
 
-    function getBalance() public view returns (uint256) {
-        return balances[msg.sender];
+    function getBalance() public view returns(uint256){
+        return balance;
     }
 
-    function getOwner() public view returns (address) {
-        return owner;
+    function setName(string memory _name) public {
+        require(msg.sender == owner, "You are not the owner of this account");
+        userName = _name;
+        emit NameSet(_name);
     }
 
-    function deposit() public payable {
-        uint256 _amount = msg.value;
-        uint256 _previousBalance = balances[msg.sender];
-        balances[msg.sender] += _amount;
-        assert(balances[msg.sender] == _previousBalance + _amount);
-        emit Deposit(msg.sender, _amount);
+    function deposit(uint256 _amount) public payable {
+        uint _previousBalance = balance;
+        require(msg.sender == owner, "You are not the owner of this account");
+        balance += _amount;
+        assert(balance == _previousBalance + _amount);
+        emit Deposit(_amount);
     }
 
     error InsufficientBalance(uint256 balance, uint256 withdrawAmount);
-    
-    function withdraw(uint256 _amount) public {
+
+    function withdraw(uint256 _withdrawAmount) public {
         require(msg.sender == owner, "You are not the owner of this account");
-        uint256 _previousBalance = balances[msg.sender];
-        if (balances[msg.sender] < _amount) {
+        uint _previousBalance = balance;
+        if (balance < _withdrawAmount) {
             revert InsufficientBalance({
-                balance: balances[msg.sender],
-                withdrawAmount: _amount
+                balance: balance,
+                withdrawAmount: _withdrawAmount
             });
         }
-        balances[msg.sender] -= _amount;
-        payable(msg.sender).transfer(_amount);
-        assert(balances[msg.sender] == (_previousBalance - _amount));
-        emit Withdraw(msg.sender, _amount);
+        balance -= _withdrawAmount;
+        assert(balance == (_previousBalance - _withdrawAmount));
+        emit Withdraw(_withdrawAmount);
     }
 
-    function transfer(address _to, uint256 _amount) public {
-        require(balances[msg.sender] >= _amount, "Insufficient balance");
-        require(_to != address(0), "Invalid address");
-        uint256 _previousBalanceFrom = balances[msg.sender];
-        uint256 _previousBalanceTo = balances[_to];
-        balances[msg.sender] -= _amount;
-        balances[_to] += _amount;
-        assert(balances[msg.sender] == _previousBalanceFrom - _amount);
-        assert(balances[_to] == _previousBalanceTo + _amount);
-        emit Transfer(msg.sender, _to, _amount);
+    function getItemForSale() public view returns(string[] memory) {
+        return ItemForSale;
+    }
+
+    function getInventory() public view returns(string[] memory){
+        return MyInventory;
+    }
+
+    function buyItem(uint _value) public returns(string memory){
+        if (_value == 1) {
+            balance -= 300;
+            MyInventory.push("Blue Shirt");
+            emit GetItem(_value, "Blue Shirt");
+            return "You now have a Blue Shirt.";
+        } else if (_value == 2) {
+            balance -= 400;
+            MyInventory.push("Black Pant");
+            emit GetItem(_value, "Black Pant");
+            return "You now have a Black Pantn";
+        } else if (_value == 3) {
+            balance -= 200;
+            MyInventory.push("Red Hat");
+            emit GetItem(_value, "Red Hat");
+            return "You now have a Red Hat";
+        } else if (_value == 4) {
+            balance -= 500;
+            MyInventory.push("Jacket");
+            emit GetItem(_value, "Jacket");
+            return "You now have a Jacket";
+        } else {
+            emit GetItem(_value, "Wrong index position");
+            return "There is no item at such index for sale";
+        }
     }
 }
